@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  role          String?
+  banned        Boolean?  @default(false)
+  banReason     String?
+  banExpiresAt  DateTime?
+
+  sessions      Session[]
+  accounts      Account[]
+  members       Member[]
+  invitations   Invitation[]
+
+  @@map("user")
+}
+
+model Session {
+  id                   Int       @id @default(autoincrement())
+  expiresAt            DateTime
+  token                String    @unique
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  ipAddress            String?
+  userAgent            String?
+
+  userId               Int
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  impersonatedBy       String?
+  activeOrganizationId Int?
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    Int       @id @default(autoincrement())
+  accountId             String
+  providerId            String
+
+  userId                Int
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         Int       @id @default(autoincrement())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Organization {
+  id        Int       @id @default(autoincrement())
+  name      String
+  slug      String    @unique
+  logo      String?
+  createdAt DateTime  @default(now())
+  metadata  String?
+
+  members     Member[]
+  invitations Invitation[]
+  wabas       Waba[]
+
+  @@map("organization")
+}
+
+model Member {
+  id             Int       @id @default(autoincrement())
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  userId         Int
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role           String       @default("member")
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@map("member")
+}
+
+model Invitation {
+  id             Int       @id @default(autoincrement())
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  email          String
+  role           String?
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+
+  inviterId      Int
+  inviter        User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
+}
+
+model Waba {
+  id                  Int      @id @default(autoincrement())
+  phoneNumberId       String   @unique
+  displayPhoneNumber  String   @unique
+
+  organizationId      Int
+  agentId             Int
+
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent               Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  contacts            Contact[]
+
+  @@map("waba")
+}
+
+model Contact {
+  id                     Int       @id @default(autoincrement())
+  email                  String?
+  name                   String?
+  phone                  String    @unique
+  startDateConversation  DateTime  @default(now())
+  lastDateConversation   DateTime? @default(now())
+  leadGoal               String?
+
+  wabaId                 Int
+  waba                   Waba      @relation(fields: [wabaId], references: [id], onDelete: Cascade)
+
+  @@map("contact")
+}
+
+model Agent {
+  id        Int    @id @default(autoincrement())
+  name      String
+  url       String
+
+  wabas     Waba[]
+
+  @@map("agent")
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+}
