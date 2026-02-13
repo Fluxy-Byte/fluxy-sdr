@@ -2,7 +2,7 @@ import 'dotenv/config';
 
 import { FunctionTool, LlmAgent } from '@google/adk';
 import { z } from 'zod';
-import { updateNameLead, contato } from './src/infra/database/contact';
+import { enviarDadosDaAtualizacaoDeNome, enviarDadosDoRegistroDeLead } from './src/adapters/backend';
 import { error } from './src/services/tools/error';
 import { sendClienteToAgenteHuman } from './src/services/tools/sendClienteToAgenteHuman';
 
@@ -91,7 +91,7 @@ export const registerLead = new FunctionTool({
         phone_number_id: "872884792582393"
       }
       
-      await contato(telefoneLead, nome, metaDados, contexto);
+      await enviarDadosDoRegistroDeLead(telefoneLead, nome, metaDados, contexto);
 
       await sendClienteToAgenteHuman(dados);
 
@@ -149,7 +149,7 @@ export const registerNameLead = new FunctionTool({
         display_phone_number: "553491713923",
         phone_number_id: "872884792582393"
       }
-      await updateNameLead(telefoneLead, nome, metaDados);
+      await enviarDadosDaAtualizacaoDeNome(telefoneLead, nome, metaDados);
 
       return {
         status: 'success',
@@ -213,7 +213,7 @@ export const errorLead = new FunctionTool({
         phone_number_id: "872884792582393"
       }
 
-      await contato(telefoneLead, nome, metaDados, problema);
+      await enviarDadosDoRegistroDeLead(telefoneLead, nome, metaDados, problema);
 
       console.log('[SUPPORT]', dados);
 
